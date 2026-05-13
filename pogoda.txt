@@ -1,0 +1,91 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+import json
+from datetime import datetime
+
+class WeatherDiary:
+    def __init__(self, master):
+        self.master = master
+        master.title("Weather Diary")
+
+        self.date_label = tk.Label(master, text="Дата (гггг-мм-дд):")
+        self.date_label.pack()
+
+        self.date_entry = tk.Entry(master)
+        self.date_entry.pack()
+
+        self.temp_label = tk.Label(master, text="Температура (°C):")
+        self.temp_label.pack()
+
+        self.temp_entry = tk.Entry(master)
+        self.temp_entry.pack()
+
+        self.description_label = tk.Label(master, text="Описание погоды:")
+        self.description_label.pack()
+
+        self.description_entry = tk.Entry(master)
+        self.description_entry.pack()
+
+        self.precipitation_label = tk.Label(master, text="Осадки (да/нет):")
+        self.precipitation_label.pack()
+
+        self.precipitation_entry = tk.Entry(master)
+        self.precipitation_entry.pack()
+
+        self.add_button = tk.Button(master, text="Добавить запись", command=self.add_record)
+        self.add_button.pack()
+
+        self.records = []
+        self.tree = ttk.Treeview(master, columns=("date", "temp", "description", "precipitation"), show='headings')
+        self.tree.heading("date", text="Дата")
+        self.tree.heading("temp", text="Температура")
+        self.tree.heading("description", text="Описание погоды")
+        self.tree.heading("precipitation", text="Осадки")
+        self.tree.pack()
+
+        self.load_records()
+
+    def add_record(self):
+        date_str = self.date_entry.get()
+        temp_str = self.temp_entry.get()
+        description = self.description_entry.get()
+        precipitation = self.precipitation_entry.get().lower() in ["да", "yes"]
+
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+            temp = float(temp_str)
+        except ValueError:
+            messagebox.showerror("Ошибка", "Пожалуйста, проверьте ввод данных.")
+            return
+
+        if not description:
+            messagebox.showerror("Ошибка", "Описание не должно быть пустым.")
+            return
+
+        record = {
+            "date": date_str,
+            "temp": temp,
+            "description": description,
+            "precipitation": precipitation
+        }
+        self.records.append(record)
+        self.tree.insert("", tk.END, values=(date_str, temp, description, 'Да' if precipitation else 'Нет'))
+        self.save_records()
+
+    def load_records(self):
+        try:
+            with open("records.json", "r") as f:
+                self.records = json.load(f)
+                for record in self.records:
+                    self.tree.insert("", tk.END, values=(record["date"], record["temp"], record["description"], 'Да' if record["precipitation"] else 'Нет'))
+        except FileNotFoundError:
+            pass
+
+    def save_records(self):
+        with open("records.json", "w") as f:
+            json.dump(self.records, f)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    weather_diary = WeatherDiary(root)
+    root.mainloop()
